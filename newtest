@@ -1,28 +1,43 @@
--- Load the Spawner library
-local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/ataturk123/GardenSpawner/main/Spawner.lua"))()
+-- Step 1: Load Nathub loader exactly as is
+loadstring(game:HttpGet("https://get.nathub.xyz/loader"))()
 
--- Show the original default UI
-Spawner.Load()
-
+-- Wait for Nathub to finish loading its UI and API
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
--- Create custom GUI
+local function waitForNathub()
+    -- Wait until _G.Spawner or similar API is available
+    for i = 1, 30 do -- max ~3 seconds (adjust as needed)
+        if _G.Spawner and typeof(_G.Spawner.SpawnPet) == "function" then
+            return true
+        end
+        wait(0.1)
+    end
+    return false
+end
+
+local ready = waitForNathub()
+if not ready then
+    warn("Nathub API did not load in time")
+end
+
+-- Step 2: Build custom UI
 local gui = Instance.new("ScreenGui")
-gui.Name = "CustomSpawnerUI"
+gui.Name = "CustomNathubUI"
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 400)
-frame.Position = UDim2.new(1, -310, 0.5, -200)
-frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.Size = UDim2.new(0, 320, 0, 440)
+frame.Position = UDim2.new(1, -330, 0.5, -220)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
+frame.ClipsDescendants = true
 
--- Title
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundTransparency = 1
-title.Text = "Custom Spawner"
+title.Text = "Custom Nathub Spawner"
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 24
 title.TextColor3 = Color3.new(1, 1, 1)
@@ -32,37 +47,38 @@ local categories = {"Pet", "Seed", "Mutation"}
 local selectedCategory = nil
 
 local catDropdown = Instance.new("TextButton", frame)
-catDropdown.Size = UDim2.new(0, 280, 0, 30)
+catDropdown.Size = UDim2.new(0, 300, 0, 30)
 catDropdown.Position = UDim2.new(0, 10, 0, 50)
 catDropdown.Text = "Select Category"
 catDropdown.Font = Enum.Font.SourceSans
 catDropdown.TextSize = 18
-catDropdown.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+catDropdown.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 catDropdown.TextColor3 = Color3.new(1, 1, 1)
 
 local dropdownFrame = Instance.new("Frame", frame)
-dropdownFrame.Size = UDim2.new(0, 280, 0, 90)
+dropdownFrame.Size = UDim2.new(0, 300, 0, 90)
 dropdownFrame.Position = UDim2.new(0, 10, 0, 80)
-dropdownFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 dropdownFrame.Visible = false
 dropdownFrame.BorderSizePixel = 0
+dropdownFrame.ClipsDescendants = true
 
 local UIListLayout = Instance.new("UIListLayout", dropdownFrame)
 UIListLayout.Padding = UDim.new(0, 4)
 
-for i, cat in ipairs(categories) do
+for _, cat in ipairs(categories) do
     local btn = Instance.new("TextButton", dropdownFrame)
     btn.Size = UDim2.new(1, 0, 0, 25)
     btn.Text = cat
     btn.Font = Enum.Font.SourceSans
     btn.TextSize = 18
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.MouseButton1Click:Connect(function()
         selectedCategory = cat
         catDropdown.Text = cat
         dropdownFrame.Visible = false
-        refreshList()
+        refreshItemList()
     end)
 end
 
@@ -72,161 +88,78 @@ end)
 
 -- Search box
 local searchBox = Instance.new("TextBox", frame)
-searchBox.Size = UDim2.new(0, 280, 0, 30)
+searchBox.Size = UDim2.new(0, 300, 0, 30)
 searchBox.Position = UDim2.new(0, 10, 0, 180)
 searchBox.PlaceholderText = "Search..."
 searchBox.Font = Enum.Font.SourceSans
 searchBox.TextSize = 18
-searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+searchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 searchBox.TextColor3 = Color3.new(1, 1, 1)
 
 -- Scroll frame for items
 local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(0, 280, 0, 150)
+scroll.Size = UDim2.new(0, 300, 0, 170)
 scroll.Position = UDim2.new(0, 10, 0, 220)
-scroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+scroll.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 scroll.BorderSizePixel = 0
 scroll.ScrollBarThickness = 6
 
 local listLayout = Instance.new("UIListLayout", scroll)
 listLayout.Padding = UDim.new(0, 4)
 
--- Input boxes for weight, age, qty
+-- Input boxes: Weight, Age, Quantity
 local weightBox = Instance.new("TextBox", frame)
-weightBox.Size = UDim2.new(0, 85, 0, 30)
-weightBox.Position = UDim2.new(0, 10, 0, 380)
-weightBox.PlaceholderText = "Weight"
+weightBox.Size = UDim2.new(0, 90, 0, 30)
+weightBox.Position = UDim2.new(0, 10, 0, 400)
+weightBox.PlaceholderText = "Weight (Pets)"
 weightBox.Text = "1"
 weightBox.Font = Enum.Font.SourceSans
 weightBox.TextSize = 18
-weightBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+weightBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 weightBox.TextColor3 = Color3.new(1, 1, 1)
 
 local ageBox = Instance.new("TextBox", frame)
-ageBox.Size = UDim2.new(0, 85, 0, 30)
-ageBox.Position = UDim2.new(0, 105, 0, 380)
-ageBox.PlaceholderText = "Age"
+ageBox.Size = UDim2.new(0, 90, 0, 30)
+ageBox.Position = UDim2.new(0, 110, 0, 400)
+ageBox.PlaceholderText = "Age (Pets)"
 ageBox.Text = "1"
 ageBox.Font = Enum.Font.SourceSans
 ageBox.TextSize = 18
-ageBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ageBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 ageBox.TextColor3 = Color3.new(1, 1, 1)
 
 local qtyBox = Instance.new("TextBox", frame)
-qtyBox.Size = UDim2.new(0, 85, 0, 30)
-qtyBox.Position = UDim2.new(0, 200, 0, 380)
-qtyBox.PlaceholderText = "Qty"
+qtyBox.Size = UDim2.new(0, 90, 0, 30)
+qtyBox.Position = UDim2.new(0, 210, 0, 400)
+qtyBox.PlaceholderText = "Quantity"
 qtyBox.Text = "1"
 qtyBox.Font = Enum.Font.SourceSans
 qtyBox.TextSize = 18
-qtyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+qtyBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 qtyBox.TextColor3 = Color3.new(1, 1, 1)
 
 -- Spawn button
 local spawnBtn = Instance.new("TextButton", frame)
-spawnBtn.Size = UDim2.new(0, 280, 0, 40)
-spawnBtn.Position = UDim2.new(0, 10, 0, 420)
-spawnBtn.Text = "Spawn"
+spawnBtn.Size = UDim2.new(0, 300, 0, 40)
+spawnBtn.Position = UDim2.new(0, 10, 0, 440)
+spawnBtn.Text = "Spawn Selected"
 spawnBtn.Font = Enum.Font.SourceSansBold
 spawnBtn.TextSize = 22
 spawnBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
 spawnBtn.TextColor3 = Color3.new(1, 1, 1)
 
--- Item list for current category
+-- Variables for current items & selected item
 local currentItems = {}
-
--- Function to get items based on category
-local function getItemsForCategory(cat)
-    if cat == "Pet" then
-        return Spawner.GetPets()
-    elseif cat == "Seed" then
-        return Spawner.GetSeeds()
-    elseif cat == "Mutation" then
-        return {
-            "Gold","Rainbow","Wet","Chilled","Frozen","Moonlit","Bloodlit","Shocked",
-            "Celestial","Dawnbound","Choc","Pollinated","Burnt","Cooked","HoneyGlazed",
-            "Plasma","Heavenly","Zombified","Molten","Disco","Voidtouched"
-        }
-    else
-        return {}
-    end
-end
-
--- Clear scroll list
-local function clearList()
-    for _, child in ipairs(scroll:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
-end
-
 local selectedItem = nil
 
--- Refresh item list
-function refreshList()
-    clearList()
-    selectedItem = nil
-    if not selectedCategory then return end
+-- Helper: get items for selected category
+local function getItemsForCategory(cat)
+    if not _G.Spawner then return {} end
 
-    local allItems = getItemsForCategory(selectedCategory)
-    local filter = searchBox.Text:lower()
-    currentItems = {}
-
-    for _, item in ipairs(allItems) do
-        if item:lower():find(filter) then
-            table.insert(currentItems, item)
+    if cat == "Pet" then
+        if _G.Spawner.GetPets then
+            return _G.Spawner.GetPets()
+        else
+            return {}
         end
-    end
-
-    for _, itemName in ipairs(currentItems) do
-        local btn = Instance.new("TextButton", scroll)
-        btn.Size = UDim2.new(1, 0, 0, 25)
-        btn.Text = itemName
-        btn.Font = Enum.Font.SourceSans
-        btn.TextSize = 18
-        btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-        btn.TextColor3 = Color3.new(1, 1, 1)
-        btn.MouseButton1Click:Connect(function()
-            selectedItem = itemName
-            for _, sibling in ipairs(scroll:GetChildren()) do
-                if sibling:IsA("TextButton") then
-                    sibling.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-                end
-            end
-            btn.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-        end)
-    end
-end
-
--- Connect search box change
-searchBox:GetPropertyChangedSignal("Text"):Connect(refreshList)
-
--- Spawn button logic
-spawnBtn.MouseButton1Click:Connect(function()
-    if not selectedItem or not selectedCategory then
-        warn("Select a category and item first!")
-        return
-    end
-
-    local weight = tonumber(weightBox.Text) or 1
-    local age = tonumber(ageBox.Text) or 1
-    local qty = tonumber(qtyBox.Text) or 1
-
-    if selectedCategory == "Pet" then
-        for i=1, qty do
-            Spawner.SpawnPet(selectedItem, weight, age)
-        end
-    elseif selectedCategory == "Seed" then
-        for i=1, qty do
-            Spawner.SpawnSeed(selectedItem)
-        end
-    elseif selectedCategory == "Mutation" then
-        for i=1, qty do
-            Spawner.Spin(selectedItem)
-        end
-    end
-end)
-
--- Initial refresh
-refreshList()
+    elseif cat == "Seed"
