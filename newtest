@@ -1,263 +1,232 @@
---=====================================
--- Swaguanscripter GUI (Loadstring-Ready)
--- Shows a loading screen, then spawns the main UI
---=====================================
+-- Load the Spawner library
+local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/ataturk123/GardenSpawner/main/Spawner.lua"))()
 
-local Players     = game:GetService("Players")
+-- Show the original default UI
+Spawner.Load()
+
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- ======= Loading Screen =======
-local loaderGui = Instance.new("ScreenGui")
-loaderGui.Name         = "SwaguanscripterLoader"
-loaderGui.ResetOnSpawn = false
-loaderGui.Parent       = LocalPlayer:WaitForChild("PlayerGui")
+-- Create custom GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "CustomSpawnerUI"
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local bg = Instance.new("Frame", loaderGui)
-bg.Size            = UDim2.fromScale(1,1)
-bg.Position        = UDim2.fromScale(0,0)
-bg.BackgroundColor3= Color3.fromRGB(20,20,20)
-bg.BorderSizePixel = 0
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 300, 0, 400)
+frame.Position = UDim2.new(1, -310, 0.5, -200)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.BorderSizePixel = 0
 
-local label = Instance.new("TextLabel", bg)
-label.Size               = UDim2.new(0,300,0,50)
-label.AnchorPoint        = Vector2.new(0.5,0.5)
-label.Position           = UDim2.new(0.5,0,0.5,0)
-label.BackgroundTransparency = 1
-label.Text               = "Swaguanscripter - Loading..."
-label.Font               = Enum.Font.SourceSansBold
-label.TextSize           = 28
-label.TextColor3         = Color3.new(1,1,1)
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "Custom Spawner"
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 24
+title.TextColor3 = Color3.new(1, 1, 1)
 
-local function fadeOutLoader()
-    for i = 1, 20 do
-        bg.BackgroundTransparency = i/20
-        label.TextTransparency    = i/20
-        wait(0.05)
-    end
-    loaderGui:Destroy()
+-- Category dropdown
+local categories = {"Pet", "Seed", "Mutation"}
+local selectedCategory = nil
+
+local catDropdown = Instance.new("TextButton", frame)
+catDropdown.Size = UDim2.new(0, 280, 0, 30)
+catDropdown.Position = UDim2.new(0, 10, 0, 50)
+catDropdown.Text = "Select Category"
+catDropdown.Font = Enum.Font.SourceSans
+catDropdown.TextSize = 18
+catDropdown.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+catDropdown.TextColor3 = Color3.new(1, 1, 1)
+
+local dropdownFrame = Instance.new("Frame", frame)
+dropdownFrame.Size = UDim2.new(0, 280, 0, 90)
+dropdownFrame.Position = UDim2.new(0, 10, 0, 80)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+dropdownFrame.Visible = false
+dropdownFrame.BorderSizePixel = 0
+
+local UIListLayout = Instance.new("UIListLayout", dropdownFrame)
+UIListLayout.Padding = UDim.new(0, 4)
+
+for i, cat in ipairs(categories) do
+    local btn = Instance.new("TextButton", dropdownFrame)
+    btn.Size = UDim2.new(1, 0, 0, 25)
+    btn.Text = cat
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 18
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.MouseButton1Click:Connect(function()
+        selectedCategory = cat
+        catDropdown.Text = cat
+        dropdownFrame.Visible = false
+        refreshList()
+    end)
 end
 
--- ======= Main UI Builder =======
-local function buildMainUI()
-    -- Load the Spawner library
-    local Spawner = loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/ataturk123/GardenSpawner/refs/heads/main/Spawner.lua"
-    ))()
+catDropdown.MouseButton1Click:Connect(function()
+    dropdownFrame.Visible = not dropdownFrame.Visible
+end)
 
-    -- Data Tables
-    local petData = {
-        { name="Bunny",          rarity="Common",    desc="Eats a carrot every 40s and sells it at 1.5× value" },
-        { name="Dog",            rarity="Common",    desc="5% chance every 60s to dig up a random seed" },
-        { name="Golden Lab",     rarity="Common",    desc="10% chance per minute to dig up a seed" },
-        { name="Black Bunny",    rarity="Uncommon",  desc="Eats carrots and sells for +50% value" },
-        { name="Chicken",        rarity="Uncommon",  desc="Increases all egg hatch speed by 10%" },
-        { name="Cat",            rarity="Uncommon",  desc="Naps 10s every 80s; plants in 10 stud range grow 1.25×" },
-        { name="Deer",           rarity="Uncommon",  desc="3% chance berry crops replant themselves on harvest" },
-        { name="Monkey",         rarity="Rare",      desc="2.5% refund of sold fruit (lower on rare fruits)" },
-        { name="Orange Tabby",   rarity="Rare",      desc="Naps 90s; plants in 15 stud radius yield 1.5× size" },
-        { name="Pig",            rarity="Rare",      desc="Every ~118s gives 2× chance for variant-fruit growth" },
-        { name="Rooster",        rarity="Rare",      desc="Speeds up egg hatching by +20%" },
-        { name="Spotted Deer",   rarity="Rare",      desc="5% chance berry plants remain after harvest" },
-        { name="Cow",            rarity="Legendary", desc="Plants within 8 stud grow at 1.12× speed" },
-        { name="Polar Bear",     rarity="Legendary", desc="10% chance every 90s to apply Chilled/Frozen" },
-        { name="Sea Otter",      rarity="Legendary", desc="Waters nearest plant every 30s" },
-        { name="Silver Monkey",  rarity="Legendary", desc="8% refund of crops on harvest (lower on rare)" },
-        { name="Turtle",         rarity="Legendary", desc="Sprinklers in range last 20% longer" },
-        { name="Brown Mouse",    rarity="Mythical",  desc="+750 XP per 8 min & +10% jump height" },
-        { name="Grey Mouse",     rarity="Mythical",  desc="+500 XP per 10 min & +10% move speed" },
-        { name="Giant Ant",      rarity="Mythical",  desc="10% chance to duplicate crop on harvest" },
-        { name="Caterpillar",    rarity="Mythical",  desc="Leafy plants grow ~1.65× faster" },
-        { name="Praying Mantis", rarity="Mythical",  desc="Every 80s grants +1.51× mutation chance in 10 stud" },
-        { name="Red Fox",        rarity="Mythical",  desc="Steals a duplicate seed from another farm every ~8 min" },
-        { name="Red Giant Ant",  rarity="Mythical",  desc="5% duplicate on harvest (+5% for fruits)" },
-        { name="Snail",          rarity="Mythical",  desc="+5% chance harvested plants drop a seed" },
-        { name="Squirrel",       rarity="Mythical",  desc="2.5% chance to keep a seed when planting" },
-        { name="Dragonfly",      rarity="Divine",    desc="1% chance per growth to apply Gold mutation" },
-        { name="Raccoon",        rarity="Divine",    desc="Steals random seed from another player" },
-        { name="Blood Owl",      rarity="Divine",    desc="Cooked Owl chance to Burnt/Cooked mutation" },
-        { name="Night Owl",      rarity="Divine",    desc="Boosts night-based mutations" },
-        { name="Queen Bee",      rarity="Divine",    desc="Pollinates & refreshes highest-cooldown pet" },
-        { name="Disco Bee",      rarity="Divine",    desc="12% chance every 15 min to apply Disco mutation" },
-    }
+-- Search box
+local searchBox = Instance.new("TextBox", frame)
+searchBox.Size = UDim2.new(0, 280, 0, 30)
+searchBox.Position = UDim2.new(0, 10, 0, 180)
+searchBox.PlaceholderText = "Search..."
+searchBox.Font = Enum.Font.SourceSans
+searchBox.TextSize = 18
+searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+searchBox.TextColor3 = Color3.new(1, 1, 1)
 
-    local seedData = {
-        "Carrot","Strawberry","Blueberry","Orange Tulip","Nightshade","Rose","Tomato",
-        "Corn","Raspberry","Glowshroom","Mint","Apple","Watermelon","Papaya","Pumpkin",
-        "Dragon Fruit","Cactus","Mango","Pear","Peach","Sunflower","Candy Blossom",
-        "Cacao","Cursed Fruit","Moon Mango","Beanstalk","Ember Lily","Sugar Apple",
-        "Celestiberry","Violet Corn","Lemon","Pineapple"
-    }
+-- Scroll frame for items
+local scroll = Instance.new("ScrollingFrame", frame)
+scroll.Size = UDim2.new(0, 280, 0, 150)
+scroll.Position = UDim2.new(0, 10, 0, 220)
+scroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 6
 
-    local mutationData = {
-        "Gold","Rainbow","Wet","Chilled","Frozen","Moonlit","Bloodlit","Shocked",
-        "Celestial","Dawnbound","Choc","Pollinated","Burnt","Cooked","HoneyGlazed",
-        "Plasma","Heavenly","Zombified","Molten","Disco","Voidtouched"
-    }
+local listLayout = Instance.new("UIListLayout", scroll)
+listLayout.Padding = UDim.new(0, 4)
 
-    -- Rarity → Button Color map
-    local rarityColors = {
-        Common    = Color3.fromRGB(170,170,170),
-        Uncommon  = Color3.fromRGB(85,255,85),
-        Rare      = Color3.fromRGB(0,170,255),
-        Legendary = Color3.fromRGB(170,0,255),
-        Mythical  = Color3.fromRGB(255,85,255),
-        Divine    = Color3.fromRGB(255,170,0),
-    }
-    local defaultColor = Color3.fromRGB(45,45,45)
+-- Input boxes for weight, age, qty
+local weightBox = Instance.new("TextBox", frame)
+weightBox.Size = UDim2.new(0, 85, 0, 30)
+weightBox.Position = UDim2.new(0, 10, 0, 380)
+weightBox.PlaceholderText = "Weight"
+weightBox.Text = "1"
+weightBox.Font = Enum.Font.SourceSans
+weightBox.TextSize = 18
+weightBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+weightBox.TextColor3 = Color3.new(1, 1, 1)
 
-    -- Build Main GUI
-    local gui = Instance.new("ScreenGui")
-    gui.Name         = "SwaguanscripterUI"
-    gui.ResetOnSpawn = false
-    gui.Parent       = LocalPlayer:WaitForChild("PlayerGui")
+local ageBox = Instance.new("TextBox", frame)
+ageBox.Size = UDim2.new(0, 85, 0, 30)
+ageBox.Position = UDim2.new(0, 105, 0, 380)
+ageBox.PlaceholderText = "Age"
+ageBox.Text = "1"
+ageBox.Font = Enum.Font.SourceSans
+ageBox.TextSize = 18
+ageBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ageBox.TextColor3 = Color3.new(1, 1, 1)
 
-    local main = Instance.new("Frame", gui)
-    main.Size               = UDim2.new(0,600,0,400)
-    main.Position           = UDim2.new(0.5,-300,0.5,-200)
-    main.BackgroundColor3   = Color3.fromRGB(30,30,30)
-    main.BorderSizePixel    = 0
+local qtyBox = Instance.new("TextBox", frame)
+qtyBox.Size = UDim2.new(0, 85, 0, 30)
+qtyBox.Position = UDim2.new(0, 200, 0, 380)
+qtyBox.PlaceholderText = "Qty"
+qtyBox.Text = "1"
+qtyBox.Font = Enum.Font.SourceSans
+qtyBox.TextSize = 18
+qtyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+qtyBox.TextColor3 = Color3.new(1, 1, 1)
 
-    -- Title
-    local title = Instance.new("TextLabel", main)
-    title.Size               = UDim2.new(1,0,0,40)
-    title.BackgroundTransparency = 1
-    title.Text               = "Swaguanscripter"
-    title.Font               = Enum.Font.SourceSansBold
-    title.TextSize           = 26
-    title.TextColor3         = Color3.new(1,1,1)
+-- Spawn button
+local spawnBtn = Instance.new("TextButton", frame)
+spawnBtn.Size = UDim2.new(0, 280, 0, 40)
+spawnBtn.Position = UDim2.new(0, 10, 0, 420)
+spawnBtn.Text = "Spawn"
+spawnBtn.Font = Enum.Font.SourceSansBold
+spawnBtn.TextSize = 22
+spawnBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+spawnBtn.TextColor3 = Color3.new(1, 1, 1)
 
-    -- Category Dropdown
-    local categories = {"Pet","Seed","Fruit","Mutation"}
-    local catBtn = Instance.new("TextButton", main)
-    catBtn.Size             = UDim2.new(0,120,0,30)
-    catBtn.Position         = UDim2.new(0,10,0,50)
-    catBtn.Text             = "-- Select --"
-    catBtn.Font             = Enum.Font.SourceSans
-    catBtn.TextSize         = 18
-    catBtn.BackgroundColor3 = defaultColor
-    catBtn.TextColor3       = Color3.new(1,1,1)
+-- Item list for current category
+local currentItems = {}
 
-    -- Search Box
-    local search = Instance.new("TextBox", main)
-    search.Size             = UDim2.new(0,200,0,30)
-    search.Position         = UDim2.new(0,140,0,50)
-    search.PlaceholderText  = "Search..."
-    search.Font             = Enum.Font.SourceSans
-    search.TextSize         = 18
-    search.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    search.TextColor3       = Color3.new(1,1,1)
-    search.ClearTextOnFocus = false
+-- Function to get items based on category
+local function getItemsForCategory(cat)
+    if cat == "Pet" then
+        return Spawner.GetPets()
+    elseif cat == "Seed" then
+        return Spawner.GetSeeds()
+    elseif cat == "Mutation" then
+        return {
+            "Gold","Rainbow","Wet","Chilled","Frozen","Moonlit","Bloodlit","Shocked",
+            "Celestial","Dawnbound","Choc","Pollinated","Burnt","Cooked","HoneyGlazed",
+            "Plasma","Heavenly","Zombified","Molten","Disco","Voidtouched"
+        }
+    else
+        return {}
+    end
+end
 
-    -- Extras Panel (Weight/Age/Qty)
-    local extra = Instance.new("Frame", main)
-    extra.Size               = UDim2.new(1,-20,0,40)
-    extra.Position           = UDim2.new(0,10,0,90)
-    extra.BackgroundTransparency = 1
+-- Clear scroll list
+local function clearList()
+    for _, child in ipairs(scroll:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+end
 
-    local weightBox = Instance.new("TextBox", extra)
-    weightBox.Size          = UDim2.new(0,60,0,30)
-    weightBox.Position      = UDim2.new(0,0,0,0)
-    weightBox.PlaceholderText = "Weight"
-    weightBox.Text          = "1"
-    weightBox.ClearTextOnFocus = false
+local selectedItem = nil
 
-    local ageBox = Instance.new("TextBox", extra)
-    ageBox.Size             = UDim2.new(0,60,0,30)
-    ageBox.Position         = UDim2.new(0,70,0,0)
-    ageBox.PlaceholderText  = "Age"
-    ageBox.Text             = "1"
-    ageBox.ClearTextOnFocus = false
+-- Refresh item list
+function refreshList()
+    clearList()
+    selectedItem = nil
+    if not selectedCategory then return end
 
-    local qtyBox = Instance.new("TextBox", extra)
-    qtyBox.Size             = UDim2.new(0,60,0,30)
-    qtyBox.Position         = UDim2.new(0,140,0,0)
-    qtyBox.PlaceholderText  = "Qty"
-    qtyBox.Text             = "1"
-    qtyBox.ClearTextOnFocus = false
+    local allItems = getItemsForCategory(selectedCategory)
+    local filter = searchBox.Text:lower()
+    currentItems = {}
 
-    -- Scrolling List
-    local scroll = Instance.new("ScrollingFrame", main)
-    scroll.Size             = UDim2.new(0,380,1,-150)
-    scroll.Position         = UDim2.new(0,10,0,140)
-    scroll.CanvasSize       = UDim2.new(0,0,5,0)
-    scroll.ScrollBarThickness = 6
-    scroll.BackgroundColor3 = Color3.fromRGB(25,25,25)
-    scroll.BorderSizePixel  = 0
-
-    local layout = Instance.new("UIListLayout", scroll)
-    layout.Padding          = UDim.new(0,4)
-    layout.SortOrder        = Enum.SortOrder.LayoutOrder
-
-    -- Hover Panel
-    local sidePanel = Instance.new("Frame", main)
-    sidePanel.Size           = UDim2.new(0,200,0,240)
-    sidePanel.Position       = UDim2.new(1,-210,0,50)
-    sidePanel.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    sidePanel.Visible        = false
-
-    local nameLabel = Instance.new("TextLabel", sidePanel)
-    nameLabel.Size           = UDim2.new(1,-10,0,28)
-    nameLabel.Position       = UDim2.new(0,5,0,5)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Font           = Enum.Font.SourceSansBold
-    nameLabel.TextSize       = 20
-    nameLabel.TextColor3     = Color3.new(1,1,1)
-
-    local rarityLabel = Instance.new("TextLabel", sidePanel)
-    rarityLabel.Size         = UDim2.new(1,-10,0,20)
-    rarityLabel.Position     = UDim2.new(0,5,0,36)
-    rarityLabel.BackgroundTransparency = 1
-    rarityLabel.Font         = Enum.Font.SourceSans
-    rarityLabel.TextSize     = 16
-    rarityLabel.TextColor3   = Color3.new(1,1,1)
-
-    local descLabel = Instance.new("TextLabel", sidePanel)
-    descLabel.Size           = UDim2.new(1,-10,1,-64)
-    descLabel.Position       = UDim2.new(0,5,0,60)
-    descLabel.BackgroundTransparency = 1
-    descLabel.Font           = Enum.Font.SourceSans
-    descLabel.TextSize       = 14
-    descLabel.TextColor3     = Color3.new(1,1,1)
-    descLabel.TextWrapped    = true
-
-    -- Refresh & Spawn Logic
-    local function clearList()
-        for _,c in ipairs(scroll:GetChildren()) do
-            if c:IsA("TextButton") then c:Destroy() end
+    for _, item in ipairs(allItems) do
+        if item:lower():find(filter) then
+            table.insert(currentItems, item)
         end
     end
 
-    local function spawnItem(cat, name)
-        if cat == "Pet" then
-            local w = tonumber(weightBox.Text) or 1
-            local a = tonumber(ageBox.Text)    or 1
-            Spawner.SpawnPet(name, w, a)
-        elseif cat == "Seed" or cat == "Fruit" then
-            for i=1,(tonumber(qtyBox.Text) or 1) do
-                Spawner.SpawnSeed(name)
+    for _, itemName in ipairs(currentItems) do
+        local btn = Instance.new("TextButton", scroll)
+        btn.Size = UDim2.new(1, 0, 0, 25)
+        btn.Text = itemName
+        btn.Font = Enum.Font.SourceSans
+        btn.TextSize = 18
+        btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.MouseButton1Click:Connect(function()
+            selectedItem = itemName
+            for _, sibling in ipairs(scroll:GetChildren()) do
+                if sibling:IsA("TextButton") then
+                    sibling.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+                end
             end
-        elseif cat == "Mutation" then
-            Spawner.Spin(name)
-        end
+            btn.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+        end)
+    end
+end
+
+-- Connect search box change
+searchBox:GetPropertyChangedSignal("Text"):Connect(refreshList)
+
+-- Spawn button logic
+spawnBtn.MouseButton1Click:Connect(function()
+    if not selectedItem or not selectedCategory then
+        warn("Select a category and item first!")
+        return
     end
 
-    local function getListFor(cat)
-        if     cat=="Pet"      then return petData
-        elseif cat=="Seed"     then return seedData
-        elseif cat=="Fruit"    then return seedData
-        elseif cat=="Mutation" then return mutationData
+    local weight = tonumber(weightBox.Text) or 1
+    local age = tonumber(ageBox.Text) or 1
+    local qty = tonumber(qtyBox.Text) or 1
+
+    if selectedCategory == "Pet" then
+        for i=1, qty do
+            Spawner.SpawnPet(selectedItem, weight, age)
+        end
+    elseif selectedCategory == "Seed" then
+        for i=1, qty do
+            Spawner.SpawnSeed(selectedItem)
+        end
+    elseif selectedCategory == "Mutation" then
+        for i=1, qty do
+            Spawner.Spin(selectedItem)
         end
     end
+end)
 
-    local function refresh(cat, filter)
-        clearList()
-        filter = filter:lower()
-        for _,entry in ipairs(getListFor(cat) or {}) do
-            local name = type(entry)=="table" and entry.name or entry
-            if name:lower():find(filter,1,true) then
-                local btn = Instance.new("TextButton", scroll)
-                btn.Size            = UDim2.new(1,0,0,28)
-                local color = (type(entry)=="table" and rarityColors[entry.rarity]) or defaultColor
-                btn.BackgroundColor3= color or defaultColor
-                btn.TextColor3      = Color3.new(1,1,1)
-                btn.Font            = Enum
+-- Initial refresh
+refreshList()
