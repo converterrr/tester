@@ -1,165 +1,21 @@
--- Step 1: Load Nathub loader exactly as is
-loadstring(game:HttpGet("https://get.nathub.xyz/loader"))()
+print("[Custom GUI] Script started")
 
--- Wait for Nathub to finish loading its UI and API
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
 
-local function waitForNathub()
-    -- Wait until _G.Spawner or similar API is available
-    for i = 1, 30 do -- max ~3 seconds (adjust as needed)
-        if _G.Spawner and typeof(_G.Spawner.SpawnPet) == "function" then
-            return true
-        end
-        wait(0.1)
-    end
-    return false
-end
-
-local ready = waitForNathub()
-if not ready then
-    warn("Nathub API did not load in time")
-end
-
--- Step 2: Build custom UI
 local gui = Instance.new("ScreenGui")
 gui.Name = "CustomNathubUI"
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 320, 0, 440)
-frame.Position = UDim2.new(1, -330, 0.5, -220)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
-frame.ClipsDescendants = true
+frame.Size = UDim2.new(0, 300, 0, 100)
+frame.Position = UDim2.new(0.5, -150, 0.5, -50)
+frame.BackgroundColor3 = Color3.new(0, 0.5, 1)
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Text = "Custom Nathub Spawner"
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 24
-title.TextColor3 = Color3.new(1, 1, 1)
-
--- Category dropdown
-local categories = {"Pet", "Seed", "Mutation"}
-local selectedCategory = nil
-
-local catDropdown = Instance.new("TextButton", frame)
-catDropdown.Size = UDim2.new(0, 300, 0, 30)
-catDropdown.Position = UDim2.new(0, 10, 0, 50)
-catDropdown.Text = "Select Category"
-catDropdown.Font = Enum.Font.SourceSans
-catDropdown.TextSize = 18
-catDropdown.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-catDropdown.TextColor3 = Color3.new(1, 1, 1)
-
-local dropdownFrame = Instance.new("Frame", frame)
-dropdownFrame.Size = UDim2.new(0, 300, 0, 90)
-dropdownFrame.Position = UDim2.new(0, 10, 0, 80)
-dropdownFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-dropdownFrame.Visible = false
-dropdownFrame.BorderSizePixel = 0
-dropdownFrame.ClipsDescendants = true
-
-local UIListLayout = Instance.new("UIListLayout", dropdownFrame)
-UIListLayout.Padding = UDim.new(0, 4)
-
-for _, cat in ipairs(categories) do
-    local btn = Instance.new("TextButton", dropdownFrame)
-    btn.Size = UDim2.new(1, 0, 0, 25)
-    btn.Text = cat
-    btn.Font = Enum.Font.SourceSans
-    btn.TextSize = 18
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.MouseButton1Click:Connect(function()
-        selectedCategory = cat
-        catDropdown.Text = cat
-        dropdownFrame.Visible = false
-        refreshItemList()
-    end)
-end
-
-catDropdown.MouseButton1Click:Connect(function()
-    dropdownFrame.Visible = not dropdownFrame.Visible
-end)
-
--- Search box
-local searchBox = Instance.new("TextBox", frame)
-searchBox.Size = UDim2.new(0, 300, 0, 30)
-searchBox.Position = UDim2.new(0, 10, 0, 180)
-searchBox.PlaceholderText = "Search..."
-searchBox.Font = Enum.Font.SourceSans
-searchBox.TextSize = 18
-searchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-searchBox.TextColor3 = Color3.new(1, 1, 1)
-
--- Scroll frame for items
-local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(0, 300, 0, 170)
-scroll.Position = UDim2.new(0, 10, 0, 220)
-scroll.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 6
-
-local listLayout = Instance.new("UIListLayout", scroll)
-listLayout.Padding = UDim.new(0, 4)
-
--- Input boxes: Weight, Age, Quantity
-local weightBox = Instance.new("TextBox", frame)
-weightBox.Size = UDim2.new(0, 90, 0, 30)
-weightBox.Position = UDim2.new(0, 10, 0, 400)
-weightBox.PlaceholderText = "Weight (Pets)"
-weightBox.Text = "1"
-weightBox.Font = Enum.Font.SourceSans
-weightBox.TextSize = 18
-weightBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-weightBox.TextColor3 = Color3.new(1, 1, 1)
-
-local ageBox = Instance.new("TextBox", frame)
-ageBox.Size = UDim2.new(0, 90, 0, 30)
-ageBox.Position = UDim2.new(0, 110, 0, 400)
-ageBox.PlaceholderText = "Age (Pets)"
-ageBox.Text = "1"
-ageBox.Font = Enum.Font.SourceSans
-ageBox.TextSize = 18
-ageBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-ageBox.TextColor3 = Color3.new(1, 1, 1)
-
-local qtyBox = Instance.new("TextBox", frame)
-qtyBox.Size = UDim2.new(0, 90, 0, 30)
-qtyBox.Position = UDim2.new(0, 210, 0, 400)
-qtyBox.PlaceholderText = "Quantity"
-qtyBox.Text = "1"
-qtyBox.Font = Enum.Font.SourceSans
-qtyBox.TextSize = 18
-qtyBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-qtyBox.TextColor3 = Color3.new(1, 1, 1)
-
--- Spawn button
-local spawnBtn = Instance.new("TextButton", frame)
-spawnBtn.Size = UDim2.new(0, 300, 0, 40)
-spawnBtn.Position = UDim2.new(0, 10, 0, 440)
-spawnBtn.Text = "Spawn Selected"
-spawnBtn.Font = Enum.Font.SourceSansBold
-spawnBtn.TextSize = 22
-spawnBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
-spawnBtn.TextColor3 = Color3.new(1, 1, 1)
-
--- Variables for current items & selected item
-local currentItems = {}
-local selectedItem = nil
-
--- Helper: get items for selected category
-local function getItemsForCategory(cat)
-    if not _G.Spawner then return {} end
-
-    if cat == "Pet" then
-        if _G.Spawner.GetPets then
-            return _G.Spawner.GetPets()
-        else
-            return {}
-        end
-    elseif cat == "Seed"
+local label = Instance.new("TextLabel", frame)
+label.Size = UDim2.new(1, 0, 1, 0)
+label.BackgroundTransparency = 1
+label.Text = "Custom Nathub GUI Loaded!"
+label.Font = Enum.Font.SourceSansBold
+label.TextColor3 = Color3.new(1, 1, 1)
+label.TextScaled = true
