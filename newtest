@@ -1,26 +1,60 @@
-print("✅ Script from GitHub is running!")
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+-- GUI Setup
 local gui = Instance.new("ScreenGui")
 gui.Name = "GardenSpawnerUI"
 gui.ResetOnSpawn = false
 gui.Parent = PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 150)
-frame.Position = UDim2.new(0.5, -150, 0.5, -75)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Size = UDim2.new(0, 300, 0, 250)
+frame.Position = UDim2.new(0.5, -150, 0.5, -125)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 frame.BorderSizePixel = 0
 frame.Parent = gui
 
-local label = Instance.new("TextLabel")
-label.Size = UDim2.new(1, 0, 1, 0)
-label.BackgroundTransparency = 1
-label.Text = "🌱 Garden Spawner Loaded"
-label.TextColor3 = Color3.fromRGB(255, 255, 255)
-label.TextScaled = true
-label.Font = Enum.Font.SourceSansBold
-label.Parent = frame
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "🌿 Garden Spawner"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.SourceSansBold
+title.TextScaled = true
+title.Parent = frame
+
+-- Helper to create buttons
+local function createButton(text, positionY, callback)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -20, 0, 40)
+    button.Position = UDim2.new(0, 10, 0, positionY)
+    button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Text = text
+    button.Font = Enum.Font.SourceSans
+    button.TextScaled = true
+    button.Parent = frame
+    button.MouseButton1Click:Connect(callback)
+end
+
+-- Example Functions (replace these with actual spawning code)
+local function spawnPet()
+    print("Spawning pet: Raccoon")
+    -- Example: Spawner.SpawnPet("Raccoon", 1, 2)
+end
+
+local function spawnSeed()
+    print("Spawning seed: Candy Blossom")
+    -- Example: Spawner.SpawnSeed("Candy Blossom")
+end
+
+local function spawnEgg()
+    print("Spawning egg: Night Egg")
+    -- Example: Spawner.SpawnEgg("Night Egg")
+end
+
+-- Buttons
+createButton("🐾 Spawn Pet", 50, spawnPet)
+createButton("🌱 Spawn Seed", 100, spawnSeed)
+createButton("🥚 Spawn Egg", 150, spawnEgg)
