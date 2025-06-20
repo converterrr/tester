@@ -1,22 +1,26 @@
-print("Loaded custom GUI script")
+print("✅ Script from GitHub is running!")
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "TestGUIFromGitHub"
+gui.Name = "GardenSpawnerUI"
+gui.ResetOnSpawn = false
 gui.Parent = PlayerGui
 
-local frame = Instance.new("Frame", gui)
+local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 300, 0, 150)
 frame.Position = UDim2.new(0.5, -150, 0.5, -75)
-frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = gui
 
-local label = Instance.new("TextLabel", frame)
+local label = Instance.new("TextLabel")
 label.Size = UDim2.new(1, 0, 1, 0)
 label.BackgroundTransparency = 1
-label.Text = "✅ Loaded GUI from GitHub!"
+label.Text = "🌱 Garden Spawner Loaded"
+label.TextColor3 = Color3.fromRGB(255, 255, 255)
 label.TextScaled = true
-label.TextColor3 = Color3.new(1,1,1)
 label.Font = Enum.Font.SourceSansBold
+label.Parent = frame
