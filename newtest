@@ -1,7 +1,5 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
-local TeleportService = game:GetService("TeleportService")
 
 local function SetupLoadingScreen()
     local player = Players.LocalPlayer
@@ -11,26 +9,6 @@ local function SetupLoadingScreen()
         playerGui.FullCoverLoading:Destroy()
     end
 
-    -- Disable movement
-    local function disableMovement()
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = 0
-            humanoid.JumpPower = 0
-        end
-    end
-    disableMovement()
-    player.CharacterAdded:Connect(disableMovement)
-
-    -- Disable other GUIs
-    for _, gui in ipairs(playerGui:GetChildren()) do
-        if gui:IsA("ScreenGui") and gui.Name ~= "FullCoverLoading" then
-            gui.Enabled = false
-        end
-    end
-
-    -- Screen GUI
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "FullCoverLoading"
     screenGui.IgnoreGuiInset = true
@@ -52,10 +30,10 @@ local function SetupLoadingScreen()
     progressBar.ZIndex = 10001
     progressBar.Parent = background
 
-    local function createLabel(text, position, size, font, color)
+    local function createLabel(text, pos, size, font, color)
         local label = Instance.new("TextLabel")
         label.Size = size
-        label.Position = position
+        label.Position = pos
         label.Text = text
         label.Font = font
         label.TextColor3 = color
@@ -72,7 +50,8 @@ local function SetupLoadingScreen()
     local creditText = createLabel("Made by 'swaguanscripter'", UDim2.new(0.4, 0, 0.63, 0), UDim2.new(0.2, 0, 0.03, 0), Enum.Font.Gotham, Color3.fromRGB(200, 200, 200))
     local espText = createLabel("Wait till 100% for the egg esp to work", UDim2.new(0.3, 0, 0.68, 0), UDim2.new(0.4, 0, 0.03, 0), Enum.Font.GothamBold, Color3.fromRGB(255, 255, 0))
 
-    -- Pet Selection UI
+    local selectedPet = "None Selected"
+
     local petGui = Instance.new("Frame")
     petGui.Size = UDim2.new(0, 200, 0, 400)
     petGui.Position = UDim2.new(0.8, 0, 0.1, 0)
@@ -99,20 +78,37 @@ local function SetupLoadingScreen()
         button.ZIndex = 10001
         button.Parent = petGui
         button.MouseButton1Click:Connect(function()
+            selectedPet = pet
             selectedLabel.Text = pet
         end)
     end
 
-    -- Progress loading
-    local totalSteps = 100
-    for i = 1, totalSteps do
+    -- Loading bar (slower)
+    for i = 1, 100 do
         progressBar.Size = UDim2.new(0.6 * (i / 100), 0, 0.01, 0)
         loadingText.Text = "Loading.. " .. i .. "%"
-        task.wait(0.05)
+        task.wait(0.1)
     end
 
-    loadingText.Text = "Complete."
-    statusText.Text = "Game Ready."
+    statusText.Text = "Ready!"
+    loadingText.Text = "Complete. Click to Spawn."
+
+    -- Spawn button
+    local spawnButton = Instance.new("TextButton")
+    spawnButton.Size = UDim2.new(0.15, 0, 0.07, 0)
+    spawnButton.Position = UDim2.new(0.42, 0, 0.75, 0)
+    spawnButton.Text = "Spawn"
+    spawnButton.Font = Enum.Font.GothamBold
+    spawnButton.TextColor3 = Color3.new(1, 1, 1)
+    spawnButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    spawnButton.ZIndex = 10002
+    spawnButton.Parent = background
+
+    spawnButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+        print("Spawning pet:", selectedPet)
+        -- You can add pet spawn logic here
+    end)
 end
 
 SetupLoadingScreen()
