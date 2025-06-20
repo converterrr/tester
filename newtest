@@ -1,21 +1,43 @@
 print("[Custom GUI] Script started")
 
+-- Wait for Spawner to be available
+local function waitForSpawner(timeout)
+    timeout = timeout or 5
+    local t = 0
+    while t < timeout do
+        if _G.Spawner and typeof(_G.Spawner.SpawnPet) == "function" then
+            return true
+        end
+        wait(0.1)
+        t += 0.1
+    end
+    return false
+end
+
+if not waitForSpawner() then
+    warn("[Custom GUI] Spawner API not found. Exiting.")
+    return
+end
+
+print("[Custom GUI] Spawner API found. Building GUI...")
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "CustomNathubUI"
+gui.ResetOnSpawn = false
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 300, 0, 100)
 frame.Position = UDim2.new(0.5, -150, 0.5, -50)
-frame.BackgroundColor3 = Color3.new(0, 0.5, 1)
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 120)
 
 local label = Instance.new("TextLabel", frame)
 label.Size = UDim2.new(1, 0, 1, 0)
 label.BackgroundTransparency = 1
-label.Text = "Custom Nathub GUI Loaded!"
-label.Font = Enum.Font.SourceSansBold
+label.Text = "Custom GUI Loaded!"
 label.TextColor3 = Color3.new(1, 1, 1)
 label.TextScaled = true
+label.Font = Enum.Font.SourceSansBold
