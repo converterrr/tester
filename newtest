@@ -1,102 +1,116 @@
--- Grow a Garden Spawner GUI by La Shane (Dropdown Menu Edition)
-
--- Wait for PlayerGui
+-- ✅ Required Services
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Destroy old GUI if exists
-local existingGUI = PlayerGui:FindFirstChild("GardenSpawner")
-if existingGUI then
-    existingGUI:Destroy()
+-- ✅ Load Spawner Library
+local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/ataturk123/GardenSpawner/refs/heads/main/Spawner.lua"))()
+
+-- ✅ Sample Data (You can expand these)
+local pets = { "Raccoon", "Goose", "Sunflower Cat", "Cactus Dog" }
+local seeds = { "Sunflower", "Carrot", "Candy Blossom", "Bamboo" }
+local fruits = { "Apple", "Blueberry", "Watermelon", "Choco Fruit" }
+local mutations = { "Burning", "Glowing", "Frozen", "Rainbow" }
+
+-- ✅ GUI Setup
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "GardenSpawnerUI"
+
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 300, 0, 350)
+Frame.Position = UDim2.new(0.05, 0, 0.1, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+
+local function createDropdown(name, items, yPos)
+	local label = Instance.new("TextLabel", Frame)
+	label.Size = UDim2.new(1, -20, 0, 20)
+	label.Position = UDim2.new(0, 10, 0, yPos)
+	label.Text = name
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.BackgroundTransparency = 1
+	label.TextSize = 14
+	label.Font = Enum.Font.SourceSans
+
+	local dropdown = Instance.new("TextButton", Frame)
+	dropdown.Size = UDim2.new(1, -20, 0, 30)
+	dropdown.Position = UDim2.new(0, 10, 0, yPos + 20)
+	dropdown.Text = "Select..."
+	dropdown.TextColor3 = Color3.new(1, 1, 1)
+	dropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	dropdown.TextSize = 14
+	dropdown.Font = Enum.Font.SourceSans
+
+	local selected = nil
+	local menuOpen = false
+
+	dropdown.MouseButton1Click:Connect(function()
+		if menuOpen then return end
+		menuOpen = true
+		for i, item in pairs(items) do
+			local choice = Instance.new("TextButton", Frame)
+			choice.Size = UDim2.new(1, -40, 0, 20)
+			choice.Position = UDim2.new(0, 20, 0, yPos + 50 + (i - 1) * 20)
+			choice.Text = item
+			choice.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+			choice.TextColor3 = Color3.new(1, 1, 1)
+			choice.Font = Enum.Font.SourceSans
+			choice.TextSize = 14
+
+			choice.MouseButton1Click:Connect(function()
+				dropdown.Text = item
+				selected = item
+				for _, btn in ipairs(Frame:GetChildren()) do
+					if btn:IsA("TextButton") and btn.Position.Y.Offset >= yPos + 50 then
+						btn:Destroy()
+					end
+				end
+				menuOpen = false
+			end)
+		end
+	end)
+
+	return function() return selected end
 end
 
--- GUI Creation
-local screenGui = Instance.new("ScreenGui", PlayerGui)
-screenGui.Name = "GardenSpawner"
-screenGui.ResetOnSpawn = false
+local function createButton(name, yPos, onClick)
+	local button = Instance.new("TextButton", Frame)
+	button.Size = UDim2.new(1, -20, 0, 30)
+	button.Position = UDim2.new(0, 10, 0, yPos)
+	button.Text = name
+	button.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.TextSize = 14
+	button.Font = Enum.Font.SourceSans
 
-local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 300, 0, 200)
-frame.Position = UDim2.new(0.5, -150, 0.5, -100)
-frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-frame.BorderSizePixel = 0
-
-local title = Instance.new("TextLabel", frame)
-title.Text = "🌱 Grow a Garden Spawner"
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 20
-
--- Dropdown creator
-local function createDropdown(items, default, position, callback)
-    local dropdown = Instance.new("TextButton", frame)
-    dropdown.Size = UDim2.new(1, -20, 0, 30)
-    dropdown.Position = position
-    dropdown.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    dropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dropdown.Font = Enum.Font.Gotham
-    dropdown.TextSize = 16
-    dropdown.Text = "🔽 " .. default
-
-    dropdown.MouseButton1Click:Connect(function()
-        local menu = Instance.new("Frame", frame)
-        menu.Size = UDim2.new(1, -20, 0, #items * 25)
-        menu.Position = UDim2.new(0, 10, 0, dropdown.Position.Y.Offset + 35)
-        menu.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
-        for i, item in ipairs(items) do
-            local btn = Instance.new("TextButton", menu)
-            btn.Size = UDim2.new(1, 0, 0, 25)
-            btn.Position = UDim2.new(0, 0, 0, (i - 1) * 25)
-            btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            btn.Font = Enum.Font.Gotham
-            btn.TextSize = 14
-            btn.Text = item
-
-            btn.MouseButton1Click:Connect(function()
-                dropdown.Text = "🔽 " .. item
-                menu:Destroy()
-                callback(item)
-            end)
-        end
-    end)
+	button.MouseButton1Click:Connect(onClick)
 end
 
--- Example pet/seed/egg lists
-local pets = { "Raccoon", "Snail", "Caterpillar", "Bumblebee" }
-local seeds = { "Sunflower", "Carrot", "Candy Blossom", "Corn" }
-local eggs = { "Common Egg", "Uncommon Egg", "Night Egg", "Event Egg" }
-local fruits = { "Apple", "Pineapple", "Mutant Melon" }
+-- ✅ Create Dropdowns and Buttons
+local getSelectedPet = createDropdown("Select Pet", pets, 10)
+createButton("Spawn Pet", 100, function()
+	local pet = getSelectedPet()
+	if pet then
+		Spawner.SpawnPet(pet, 1, 1)
+	end
+end)
 
--- Mocked backend (replace these with your actual spawner logic)
-local function spawnPet(petName)
-    print("Spawning pet: " .. petName)
-    -- Replace with your actual spawner call, e.g.:
-    -- Spawner.SpawnPet(petName, 1, 1)
-end
+local getSelectedSeed = createDropdown("Select Seed", seeds, 150)
+createButton("Spawn Seed", 240, function()
+	local seed = getSelectedSeed()
+	if seed then
+		Spawner.SpawnSeed(seed)
+	end
+end)
 
-local function spawnSeed(seedName)
-    print("Spawning seed: " .. seedName)
-end
+local getSelectedFruit = createDropdown("Select Fruit", fruits, 290)
+createButton("Spawn Fruit", 380, function()
+	local fruit = getSelectedFruit()
+	if fruit then
+		Spawner.Spin(fruit)
+	end
+end)
 
-local function spawnEgg(eggName)
-    print("Spawning egg: " .. eggName)
-end
-
-local function spawnFruit(fruitName)
-    print("Spawning fruit: " .. fruitName)
-end
-
--- Build dropdowns
-createDropdown(pets, "Select Pet", UDim2.new(0, 10, 0, 40), spawnPet)
-createDropdown(seeds, "Select Seed", UDim2.new(0, 10, 0, 80), spawnSeed)
-createDropdown(eggs, "Select Egg", UDim2.new(0, 10, 0, 120), spawnEgg)
-createDropdown(fruits, "Select Fruit", UDim2.new(0, 10, 0, 160), spawnFruit)
-
--- Optional Draggable
-frame.Active = true
-frame.Draggable = true
+-- You can add mutation dropdown/spawn buttons similarly
