@@ -1,273 +1,36 @@
--- Grow a Garden Spawner GUI with Tabs and Dropdowns
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/ataturk123/GardenSpawner/refs/heads/main/Spawner.lua"))()
+local success, Spawner = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/ataturk123/GardenSpawner/refs/heads/main/Spawner.lua"))()
+end)
+
+if not success or not Spawner then
+    warn("Failed to load Spawner!")
+    return
+end
+
 Spawner.Load()
 
--- Helper function to create UI elements easily
-local function create(parent, className, props)
-    local inst = Instance.new(className)
-    for k, v in pairs(props) do
-        if k == "Parent" then
-            inst.Parent = v
-        else
-            inst[k] = v
-        end
-    end
-    return inst
-end
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TestSpawnerGui"
+ScreenGui.Parent = PlayerGui
+ScreenGui.ResetOnSpawn = false
 
--- Clear existing GUI if present
-local existingGui = LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("GrowGardenSpawnerGUI")
-if existingGui then existingGui:Destroy() end
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 200)
+frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+frame.Parent = ScreenGui
 
-local ScreenGui = create(game:GetService("Players").LocalPlayer.PlayerGui, "ScreenGui", {
-    Name = "GrowGardenSpawnerGUI",
-    ResetOnSpawn = false,
-})
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 280, 0, 50)
+button.Position = UDim2.new(0, 10, 0, 10)
+button.Text = "Spawn Bunny Pet (1kg, age 1)"
+button.Parent = frame
 
-local mainFrame = create(ScreenGui, "Frame", {
-    Size = UDim2.new(0, 400, 0, 400),
-    Position = UDim2.new(0.5, -200, 0.5, -200),
-    BackgroundColor3 = Color3.fromRGB(30, 30, 30),
-    BorderSizePixel = 0,
-})
-
-local tabBar = create(mainFrame, "Frame", {
-    Size = UDim2.new(1, 0, 0, 30),
-    BackgroundColor3 = Color3.fromRGB(45, 45, 45),
-})
-
-local tabs = {"Pets", "Seeds & Fruits", "Eggs"}
-local contentFrames = {}
-
--- Create tab buttons and content frames
-for i, tabName in ipairs(tabs) do
-    local btn = create(tabBar, "TextButton", {
-        Text = tabName,
-        Size = UDim2.new(1/#tabs, 0, 1, 0),
-        Position = UDim2.new((i-1)/#tabs, 0, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-        TextColor3 = Color3.new(1,1,1),
-        Font = Enum.Font.SourceSansBold,
-        TextSize = 18,
-    })
-    local contentFrame = create(mainFrame, "Frame", {
-        Size = UDim2.new(1, -20, 1, -50),
-        Position = UDim2.new(0, 10, 0, 40),
-        BackgroundColor3 = Color3.fromRGB(25, 25, 25),
-        Visible = (i == 1), -- only first tab visible initially
-    })
-    contentFrames[tabName] = contentFrame
-
-    btn.MouseButton1Click:Connect(function()
-        for _, frame in pairs(contentFrames) do
-            frame.Visible = false
-        end
-        contentFrames[tabName].Visible = true
-        for _, button in pairs(tabBar:GetChildren()) do
-            if button:IsA("TextButton") then
-                button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            end
-        end
-        btn.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
-    end)
-end
-
--- Sample pet data by rarity (expand as needed)
-local petsByRarity = {
-    Common = {"Bunny", "Dog", "Golden Lab"},
-    Uncommon = {"Black Bunny", "Chicken", "Cat", "Deer"},
-    Rare = {"Monkey", "Orange Tabby", "Pig", "Rooster", "Spotted Deer"},
-    Legendary = {"Cow", "Polar Bear", "Sea Otter", "Silver Monkey", "Turtle"},
-    Mythical = {"Brown Mouse", "Grey Mouse", "Giant Ant", "Caterpillar", "Praying Mantis"},
-    Divine = {"Dragonfly", "Raccoon", "Blood Owl", "Night Owl", "Queen Bee", "Disco Bee"},
-}
-
--- Dropdown helper function
-local function createDropdown(parent, labelText, options, callback)
-    local container = create(parent, "Frame", {
-        Size = UDim2.new(1, 0, 0, 50),
-        BackgroundTransparency = 1,
-    })
-
-    local label = create(container, "TextLabel", {
-        Text = labelText,
-        Size = UDim2.new(0.4, 0, 1, 0),
-        BackgroundTransparency = 1,
-        TextColor3 = Color3.new(1,1,1),
-        Font = Enum.Font.SourceSansBold,
-        TextSize = 18,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-
-    local dropdownBtn = create(container, "TextButton", {
-        Text = "Select",
-        Size = UDim2.new(0.55, 0, 1, 0),
-        Position = UDim2.new(0.45, 0, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-        TextColor3 = Color3.new(1,1,1),
-        Font = Enum.Font.SourceSans,
-        TextSize = 18,
-    })
-
-    local dropdownOpen = false
-    local dropdownFrame
-
-    dropdownBtn.MouseButton1Click:Connect(function()
-        if dropdownOpen then
-            if dropdownFrame then dropdownFrame:Destroy() end
-            dropdownOpen = false
-            return
-        end
-        dropdownOpen = true
-        dropdownFrame = create(container, "Frame", {
-            Size = UDim2.new(1, 0, 0, math.min(#options, 6)*30),
-            Position = UDim2.new(0, 0, 1, 0),
-            BackgroundColor3 = Color3.fromRGB(40, 40, 40),
-            BorderSizePixel = 0,
-            ClipsDescendants = true,
-            ZIndex = 2,
-        })
-
-        local layout = Instance.new("UIListLayout", dropdownFrame)
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-
-        for _, option in ipairs(options) do
-            local btn = create(dropdownFrame, "TextButton", {
-                Text = option,
-                Size = UDim2.new(1, 0, 0, 30),
-                BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-                TextColor3 = Color3.new(1,1,1),
-                Font = Enum.Font.SourceSans,
-                TextSize = 18,
-                AutoButtonColor = true,
-            })
-            btn.MouseButton1Click:Connect(function()
-                dropdownBtn.Text = option
-                callback(option)
-                dropdownFrame:Destroy()
-                dropdownOpen = false
-            end)
-        end
-    end)
-    return container, dropdownBtn
-end
-
--- Pets Tab Setup
-local petList = {}
-local petDropdown, petDropdownBtn = createDropdown(contentFrames["Pets"], "Choose Pet:", {}, function(selectedPet)
-    petDropdownBtn.Text = selectedPet
+button.MouseButton1Click:Connect(function()
+    Spawner.SpawnPet("Bunny", 1, 1)
+    print("Spawned Bunny pet")
 end)
-
-local rarityDropdown, rarityDropdownBtn = createDropdown(contentFrames["Pets"], "Choose Rarity:", {"Common", "Uncommon", "Rare", "Legendary", "Mythical", "Divine"}, function(selectedRarity)
-    petList = petsByRarity[selectedRarity] or {}
-    petDropdownBtn.Text = "Select Pet"
-    -- Update pet dropdown options
-    petDropdown:ClearAllChildren()
-    petDropdownBtn.Text = "Select Pet"
-    petDropdown:Destroy()
-    -- Recreate pet dropdown with updated pet list
-    petDropdown, petDropdownBtn = createDropdown(contentFrames["Pets"], "Choose Pet:", petList, function(selectedPet)
-        petDropdownBtn.Text = selectedPet
-    end)
-    petDropdown.Parent = contentFrames["Pets"]
-end)
-
--- Inputs for weight and age
-local weightInput = create(contentFrames["Pets"], "TextBox", {
-    PlaceholderText = "Weight (kg)",
-    Size = UDim2.new(0.45, 0, 0, 30),
-    Position = UDim2.new(0, 10, 0, 150),
-    Text = "1",
-    ClearTextOnFocus = false,
-    Font = Enum.Font.SourceSans,
-    TextSize = 18,
-    BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-    TextColor3 = Color3.new(1,1,1),
-})
-
-local ageInput = create(contentFrames["Pets"], "TextBox", {
-    PlaceholderText = "Age",
-    Size = UDim2.new(0.45, 0, 0, 30),
-    Position = UDim2.new(0.5, 10, 0, 150),
-    Text = "1",
-    ClearTextOnFocus = false,
-    Font = Enum.Font.SourceSans,
-    TextSize = 18,
-    BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-    TextColor3 = Color3.new(1,1,1),
-})
-
-local spawnPetBtn = create(contentFrames["Pets"], "TextButton", {
-    Text = "Spawn Pet",
-    Size = UDim2.new(1, -20, 0, 40),
-    Position = UDim2.new(0, 10, 0, 200),
-    BackgroundColor3 = Color3.fromRGB(85, 170, 85),
-    TextColor3 = Color3.new(1, 1, 1),
-    Font = Enum.Font.SourceSansBold,
-    TextSize = 22,
-})
-
-spawnPetBtn.MouseButton1Click:Connect(function()
-    local pet = petDropdownBtn.Text
-    local weight = tonumber(weightInput.Text) or 1
-    local age = tonumber(ageInput.Text) or 1
-    if pet == "Select Pet" then return end
-    Spawner.SpawnPet(pet, weight, age)
-end)
-
--- Seeds & Fruits Tab Setup
-local seedsAndFruits = {
-    "Carrot","Strawberry","Blueberry","Orange Tulip","Nightshade","Rose","Tomato",
-    "Corn","Raspberry","Glowshroom","Mint","Apple","Watermelon","Papaya","Pumpkin",
-    "Dragon Fruit","Cactus","Mango","Pear","Peach","Sunflower","Candy Blossom",
-    "Cacao","Cursed Fruit","Moon Mango","Beanstalk","Ember Lily","Sugar Apple",
-    "Celestiberry","Violet Corn","Lemon","Pineapple"
-}
-local seedsDropdown, seedsDropdownBtn = createDropdown(contentFrames["Seeds & Fruits"], "Choose Seed/Fruit:", seedsAndFruits, function(selected)
-    seedsDropdownBtn.Text = selected
-end)
-
-local spawnSeedBtn = create(contentFrames["Seeds & Fruits"], "TextButton", {
-    Text = "Spawn Seed",
-    Size = UDim2.new(1, -20, 0, 40),
-    Position = UDim2.new(0, 10, 0, 50),
-    BackgroundColor3 = Color3.fromRGB(85, 170, 85),
-    TextColor3 = Color3.new(1, 1, 1),
-    Font = Enum.Font.SourceSansBold,
-    TextSize = 22,
-})
-
-spawnSeedBtn.MouseButton1Click:Connect(function()
-    local seed = seedsDropdownBtn.Text
-    if seed == "Select Seed/Fruit" then return end
-    Spawner.SpawnSeed(seed)
-end)
-
--- Eggs Tab Setup
-local eggs = {
-    "Common Egg", "Uncommon Egg", "Rare Egg", "Mythical Egg", "Night Egg"
-}
-local eggsDropdown, eggsDropdownBtn = createDropdown(contentFrames["Eggs"], "Choose Egg:", eggs, function(selected)
-    eggsDropdownBtn.Text = selected
-end)
-
-local spawnEggBtn = create(contentFrames["Eggs"], "TextButton", {
-    Text = "Spawn Egg",
-    Size = UDim2.new(1, -20, 0, 40),
-    Position = UDim2.new(0, 10, 0, 50),
-    BackgroundColor3 = Color3.fromRGB(85, 170, 85),
-    TextColor3 = Color3.new(1, 1, 1),
-    Font = Enum.Font.SourceSansBold,
-    TextSize = 22,
-})
-
-spawnEggBtn.MouseButton1Click:Connect(function()
-    local egg = eggsDropdownBtn.Text
-    if egg == "Select Egg" then return end
-    Spawner.SpawnEgg(egg)
-end)
-
-return true
