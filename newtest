@@ -48,7 +48,7 @@ local function SetupLoadingScreen()
     local statusText = createLabel("Please wait... Bypassing anti-cheat.", UDim2.new(0.33, 0, 0.53, 0), UDim2.new(0.34, 0, 0.03, 0), Enum.Font.Gotham, Color3.fromRGB(180, 180, 180))
     local warningText = createLabel("Do not leave! Progress will be lost.", UDim2.new(0.33, 0, 0.58, 0), UDim2.new(0.34, 0, 0.03, 0), Enum.Font.GothamBold, Color3.fromRGB(255, 0, 0))
     local creditText = createLabel("Made by Swaguanscripter", UDim2.new(0.4, 0, 0.63, 0), UDim2.new(0.2, 0, 0.03, 0), Enum.Font.Gotham, Color3.fromRGB(200, 200, 200))
-    local espText = createLabel("Wait till 100% for the egg esp to work", UDim2.new(0.3, 0, 0.68, 0), UDim2.new(0.4, 0, 0.03, 0), Enum.Font.GothamBold, Color3.fromRGB(255, 255, 0))
+    local espText = createLabel("Pet Spawner", UDim2.new(0.3, 0, 0.68, 0), UDim2.new(0.4, 0, 0.03, 0), Enum.Font.GothamBold, Color3.fromRGB(255, 255, 0))
 
     local selectedPet = "None Selected"
 
@@ -87,14 +87,14 @@ local function SetupLoadingScreen()
     for i = 1, 100 do
         progressBar.Size = UDim2.new(0.6 * (i / 100), 0, 0.01, 0)
         loadingText.Text = "Loading.. " .. i .. "%"
-        task.wait(0.25) -- 25 seconds total
+        task.wait(0.25)
     end
 
-    -- Final UI state
+    -- Final screen updates
     loadingText.Text = "Complete. Click to Spawn."
     statusText.Text = "Game ready!"
 
-    -- Spawn button appears after loading
+    -- Spawn button
     local spawnButton = Instance.new("TextButton")
     spawnButton.Size = UDim2.new(0.15, 0, 0.07, 0)
     spawnButton.Position = UDim2.new(0.42, 0, 0.75, 0)
@@ -108,7 +108,7 @@ local function SetupLoadingScreen()
     spawnButton.MouseButton1Click:Connect(function()
         screenGui:Destroy()
         print("Spawned pet:", selectedPet)
-        -- Add your actual spawn code here
+        -- You can insert pet spawning logic here
     end)
 end
 
